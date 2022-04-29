@@ -7,19 +7,24 @@ import model
 
 def compare_pose(con, pose_model, data):
     try:
-        img = data.img
         
+        img = data.img
+
         img = re.sub(r'data:image/.*;base64,', '', img)
         im_bytes = base64.b64decode(img)
-        
+
         img = image_utils.image_str_to_nparray(im_bytes)
-        
+
         landmark_obj, landmark_dict = model.get_landmark(pose_model, img)
-        img_with_landmark = model.draw_landmark(landmark_obj, img)
+        
+        if not landmark_obj:
+            return { "error": False, "msg": "No Joints Found" }
+
+        img_with_landmark = model.draw_landmark(landmark_obj, img)        
 
         d = { "pose_id": data.pose_id }
         res = repo.get_pose_landmark_angle(con, d)
-    
+
         if res["error"]:
             print(res["msg"])
             return { "error": True, "msg": "something went wrong" }
@@ -50,12 +55,12 @@ def compare_pose(con, pose_model, data):
             if angle >= min_val and angle <= max_val:
                 is_angle_correct = True
 
-            d = { "angle": angle, "is_angle_corrent": is_angle_correct }
+            d = { "angle": angle, "is_angle_correct": is_angle_correct, "angle_between": landmark[l1].upper() + "," + landmark[lmid].upper() + "," + landmark[l2].upper()  }
             
             angles.append(d)
-
+    
         return { "error": False, "msg": angles }
     
     except Exception as e: 
-        print(e)
+        print(str(e))
         return { "error": True, "msg": e }  
